@@ -11,8 +11,12 @@ test("Beeceptor callout proxy", async ({ page }) => {
 
   await page.locator('a[type="button"][data-target=".allRules"]').click();
 
+  await page.screenshot();
+
   await synchnorousCallout(page);
   await asynchnorousCallout(page);
+
+  await page.screenshot();
 
   await testAPISync(mockUrl);
   await testAPIAsync(mockUrl);
@@ -20,6 +24,7 @@ test("Beeceptor callout proxy", async ({ page }) => {
   await page.pause();
 });
 
+// Navigation to the Beeceptor
 async function navigateToBeeceptor(page) {
   await page.goto("https://beeceptor.com");
   await page
@@ -34,6 +39,7 @@ async function navigateToBeeceptor(page) {
     .click();
 }
 
+//Create a Mock server
 async function createMockServer(page) {
   await page
     .locator("#mockContent")
@@ -44,9 +50,12 @@ async function createMockServer(page) {
   const mockUrl = await page.locator("#endpointUrl").textContent();
   expect(mockUrl).not.toBeNull();
 
+  await page.screenshot();
+
   return mockUrl.trim();
 }
 
+//Open rules window
 async function selectCalloutOption(page) {
   await page
     .getByRole("button", {
@@ -62,26 +71,25 @@ async function selectCalloutOption(page) {
     .click();
 }
 
+// set synchnorous callout proxy
 async function synchnorousCallout(page) {
   await selectCalloutOption(page);
 
   await page.locator("#matchPath").nth(0).fill("/synccall");
 
-  await page
-    .locator("#targetEndpoint")
-    .fill("https://jsonplaceholder.typicode.com/todos/1");
+  await page.locator("#targetEndpoint").fill("https://reqres.in/api/users/2");
 
   await page
     .locator("#ruleDescription")
     .nth(0)
     .fill("Synchronous proxy callout");
 
-  await page.locator("#saveProxy").click();
+  await page.screenshot();
 
-  //const ruleDescription = await page.locator("#ruleDescription").textContent();
-  //expect(ruleDescription).toContain("Synchronous proxy callout");
+  await page.locator("#saveProxy").click();
 }
 
+// set asynchnorous callout proxy
 async function asynchnorousCallout(page) {
   await selectCalloutOption(page);
 
@@ -98,18 +106,19 @@ async function asynchnorousCallout(page) {
     .nth(0)
     .fill('{"status":202,"message": "Request in process"}');
 
-  await page
-    .locator("#targetEndpoint")
-    .fill("https://jsonplaceholder.typicode.com/todos/1");
+  await page.locator("#targetEndpoint").fill("https://reqres.in/api/users/2");
 
   await page
     .locator("#ruleDescription")
     .nth(0)
     .fill("Asynchronous proxy callout");
 
+  await page.screenshot();
+
   await page.locator("#saveProxy").click();
 }
 
+// Test the newly created Mock server
 async function apiTest(url) {
   try {
     const response = await fetch(`${url}/data`);
@@ -123,32 +132,47 @@ async function apiTest(url) {
   }
 }
 
+//Test synchnorous api
 async function testAPISync(url) {
   try {
     const response = await fetch(`${url}/synccall`);
     const data = await response.json();
+    console.log("Data from synchnorous callout ==> ", data);
 
     expect(data).toEqual({
-      userId: 1,
-      id: 1,
-      title: "delectus aut autem",
-      completed: false,
+      data: {
+        id: 2,
+        email: "janet.weaver@reqres.in",
+        first_name: "Janet",
+        last_name: "Weaver",
+        avatar: "https://reqres.in/img/faces/2-image.jpg",
+      },
+      support: {
+        url: "https://contentcaddy.io?utm_source=reqres&utm_medium=json&utm_campaign=referral",
+        text: "Tired of writing endless social media content? Let Content Caddy generate it for you.",
+      },
     });
+
+    return;
   } catch (err) {
     console.log("API Unavalialbe:", err);
     throw err;
   }
 }
 
+//Test asynchnorous api
 async function testAPIAsync(url) {
   try {
     const response = await fetch(`${url}/asynccall`);
     const data = await response.json();
+    console.log("Data from synchnorous callout ==> ", data);
 
     expect(data).toEqual({
       status: 202,
       message: "Request in process",
     });
+
+    return;
   } catch (err) {
     console.log("API Unavalialbe:", err);
     throw err;
